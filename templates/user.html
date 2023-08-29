@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}
+    User
+    {{ super() }}
+{% endblock %}
+{% block body %}
+    <h1>
+        {% if name %}
+            Hello, {{ name|capitalize }}!
+        {% else %}
+            Hello, Stranger!
+        {% endif %}
+    </h1>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% import 'macros.html' as macors %}
+{#{% include 'macros.html' %}#}
+{% block title %}
+    List
+    {{ super() }}
+{% endblock %}
+{% block body %}
+    <ol>
+        {% for comment in commentList %}
+            {#                {{ render_comment(comment) }}#}
+            {{ macors.render_comment(comment) }}
+        {% endfor %}
+    </ol>
+{% endblock %}

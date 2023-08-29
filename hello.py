@@ -1,4 +1,4 @@
-from flask import Flask, request, make_response, redirect, abort
+from flask import Flask, request, make_response, redirect, abort, render_template
 from markupsafe import escape
 
 app = Flask(__name__)
@@ -6,8 +6,15 @@ app = Flask(__name__)
 
 @app.route("/")
 def hello_world():
-    user_agent = request.headers.get('User-Agent')
-    return f'<h1>UA</h1><p>{user_agent}</p>'
+    # user_agent = request.headers.get('User-Agent')
+    # return f'<h1>UA</h1><p>{user_agent}</p>'
+    return render_template("index.html")
+
+
+@app.route("/list")
+def hello_list():
+    _list = ['Hello', 'World', 'Tom', 'Cat']
+    return render_template('list.html', commentList=_list)
 
 
 @app.route("/error")
@@ -30,8 +37,9 @@ def abort_page(code: int):
 
 
 @app.route('/user/<username>')
-def show_user_profile(username):
-    return f'User {escape(username)}'
+def show_user_profile(username: str):
+    # return f'User {escape(username)}'
+    return render_template('user.html', name=username)
 
 
 @app.route('/post/<int:post_id>')
