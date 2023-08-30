@@ -1,16 +1,19 @@
 from flask import Flask, request, make_response, redirect, abort, render_template
+from datetime import datetime
 from markupsafe import escape
 from flask_bootstrap import Bootstrap
+from flask_moment import Moment
 
 app = Flask(__name__)
 bootstrap = Bootstrap(app)
+moment = Moment(app)
 
 
 @app.route("/")
 def hello_world():
     # user_agent = request.headers.get('User-Agent')
     # return f'<h1>UA</h1><p>{user_agent}</p>'
-    return render_template("index.html")
+    return render_template("index.html", current_time=datetime.utcnow())
 
 
 @app.route("/list")
