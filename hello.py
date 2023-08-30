@@ -1,19 +1,35 @@
-from flask import Flask, request, make_response, redirect, abort, render_template
 from datetime import datetime
-from markupsafe import escape
+
+from flask import Flask, make_response, redirect, abort, render_template, session, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'hard to guess string'
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 
 
-@app.route("/")
-def hello_world():
-    # user_agent = request.headers.get('User-Agent')
-    # return f'<h1>UA</h1><p>{user_agent}</p>'
-    return render_template("index.html", current_time=datetime.utcnow())
+class NameForm(FlaskForm):
+    name = StringField('What is your name?', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+
+@app.route("/", methods=['GET', 'POST'])
+def index():
+    form = NameForm()
+    if form.validate_on_submit():
+        old_name = session.get('name')
+        new_name = form.name.data
+        if old_name is not None and old_name != new_name:
+            flash('已修改name!')
+        session['name'] = new_name
+        return redirect(url_for('index'))
+    name = session.get('name')
+    return render_template("index.html", current_time=datetime.utcnow(), form=form, name=name)
 
 
 @app.route("/list")
