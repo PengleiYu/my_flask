@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
 
 from flask import Flask, make_response, redirect, abort, render_template, session, url_for, flash
 from flask_bootstrap import Bootstrap
@@ -19,6 +20,27 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db: SQLAlchemy = SQLAlchemy(app)
+
+app.config.update(dict(
+    DEBUG=True,
+    MAIL_SERVER='smtp.qq.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
+    MAIL_USERNAME='809390770@qq.com',
+    MAIL_PASSWORD='tzfpcxolpvopbfej',
+))
+
+app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
+app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
+mail = Mail(app)
+
+
+def send_email_impl():
+    msg = Message('test mail', sender='809390770@qq.com', recipients=['yupenglei@126.com'])
+    msg.body = 'this is the plain text body'
+    msg.html = 'This is the <b>HTML</b> body'
+    mail.send(msg)
 
 
 class Role(db.Model):
@@ -69,6 +91,12 @@ def index():
                            form=form, name=name, known=known)
 
 
+@app.route('/mail')
+def send_mail():
+    send_email_impl()
+    return '<h1>mail</h1>'
+
+
 @app.route("/list")
 def hello_list():
     _list = ['Hello', 'World', 'Tom', 'Cat']
@@ -110,11 +138,11 @@ def show_subpath(subpath):
     return f'Subpath {subpath}'
 
 
-@app.errorhandler(404)
-def page_not_found(e):
-    return render_template('404.html'), 404
-
-
-@app.errorhandler(500)
-def internal_server_error(e):
-    return render_template('500.html'), 500
+# @app.errorhandler(404)
+# def page_not_found(e):
+#     return render_template('404.html'), 404
+#
+#
+# @app.errorhandler(500)
+# def internal_server_error(e):
+#     return render_template('500.html'), 500
