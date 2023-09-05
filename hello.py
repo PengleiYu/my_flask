@@ -1,11 +1,11 @@
-from datetime import datetime
 import os
-from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail, Message
+from datetime import datetime
 
-from flask import Flask, make_response, redirect, abort, render_template, session, url_for, flash
+from flask import Flask, make_response, redirect, abort, render_template, session, url_for
 from flask_bootstrap import Bootstrap
+from flask_mail import Mail, Message
 from flask_moment import Moment
+from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
@@ -21,14 +21,19 @@ bootstrap = Bootstrap(app)
 moment = Moment(app)
 db: SQLAlchemy = SQLAlchemy(app)
 
+MAIL_SERVER = os.environ.get('MAIL_SERVER')
+MAIL_PORT = os.environ.get('MAIL_PORT')
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+
 app.config.update(dict(
     DEBUG=True,
-    MAIL_SERVER='smtp.qq.com',
-    MAIL_PORT=587,
+    MAIL_SERVER=MAIL_SERVER,
+    MAIL_PORT=MAIL_PORT,
+    MAIL_USERNAME=MAIL_USERNAME,
+    MAIL_PASSWORD=MAIL_PASSWORD,
     MAIL_USE_TLS=True,
     MAIL_USE_SSL=False,
-    MAIL_USERNAME='809390770@qq.com',
-    MAIL_PASSWORD='tzfpcxolpvopbfej',
 ))
 
 app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
@@ -36,9 +41,9 @@ app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
 mail = Mail(app)
 
 
-def send_email_impl():
-    msg = Message('test mail', sender='809390770@qq.com', recipients=['yupenglei@126.com'])
-    msg.body = 'this is the plain text body'
+def send_email_impl(recipient: str = 'yupenglei@126.com', subject: str = 'test mail'):
+    msg = Message(subject, sender=MAIL_USERNAME, recipients=[recipient])
+    # msg.body = 'this is the plain text body'
     msg.html = 'This is the <b>HTML</b> body'
     mail.send(msg)
 
@@ -136,7 +141,6 @@ def show_post(post_id):
 @app.route('/path/<path:subpath>')
 def show_subpath(subpath):
     return f'Subpath {subpath}'
-
 
 # @app.errorhandler(404)
 # def page_not_found(e):
