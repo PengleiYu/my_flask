@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from threading import Thread
 
 from flask import Flask, make_response, redirect, abort, render_template, session, url_for
 from flask_bootstrap import Bootstrap
@@ -43,20 +44,20 @@ app.config['FLASKY_ADMIN'] = ADMIN_MAIL
 mail = Mail(app)
 
 
-def send_email2(to: str, subject: str, template: str, **kwargs):
+def send_email_impl(app: Flask, msg: Message):
+    with app.app_context():
+        mail.send(msg)
+
+
+def send_email(to: str, subject: str, template: str, **kwargs) -> Thread:
     msg = Message(subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
                   sender=app.config['FLASKY_MAIL_SENDER'],
                   recipients=[to])
     msg.body = render_template(template + ".txt", **kwargs)
     msg.html = render_template(template + ".html", **kwargs)
-    mail.send(msg)
-
-
-def send_email_impl(recipient: str = 'yupenglei@126.com', subject: str = 'test mail'):
-    msg = Message(subject, sender=MAIL_SENDER_USERNAME, recipients=[recipient])
-    # msg.body = 'this is the plain text body'
-    msg.html = 'This is the <b>HTML</b> body'
-    mail.send(msg)
+    thr: Thread = Thread(target=send_email_impl, args=[app, msg])
+    thr.start()
+    return thr
 
 
 class Role(db.Model):
@@ -96,7 +97,7 @@ def index():
             db.session.commit()
             session['known'] = False
             if app.config.get('FLASKY_ADMIN'):
-                send_email2(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
+                send_email(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
         else:
             session['known'] = True
 
@@ -106,12 +107,6 @@ def index():
     known = session.get('known', False)
     return render_template("index.html", current_time=datetime.utcnow(),
                            form=form, name=name, known=known)
-
-
-@app.route('/mail')
-def send_mail():
-    send_email_impl()
-    return '<h1>mail</h1>'
 
 
 @app.route("/list")
