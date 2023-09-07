@@ -23,26 +23,37 @@ db: SQLAlchemy = SQLAlchemy(app)
 
 MAIL_SERVER = os.environ.get('MAIL_SERVER')
 MAIL_PORT = os.environ.get('MAIL_PORT')
-MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+MAIL_SENDER_USERNAME = os.environ.get('MAIL_USERNAME')
+MAIL_SENDER_PASSWORD = os.environ.get('MAIL_PASSWORD')
+ADMIN_MAIL = os.environ.get('FLASKY_ADMIN')
 
 app.config.update(dict(
     DEBUG=True,
     MAIL_SERVER=MAIL_SERVER,
     MAIL_PORT=MAIL_PORT,
-    MAIL_USERNAME=MAIL_USERNAME,
-    MAIL_PASSWORD=MAIL_PASSWORD,
+    MAIL_USERNAME=MAIL_SENDER_USERNAME,
+    MAIL_PASSWORD=MAIL_SENDER_PASSWORD,
     MAIL_USE_TLS=True,
     MAIL_USE_SSL=False,
 ))
 
 app.config['FLASKY_MAIL_SUBJECT_PREFIX'] = '[Flasky]'
-app.config['FLASKY_MAIL_SENDER'] = 'Flasky Admin <flasky@example.com>'
+app.config['FLASKY_MAIL_SENDER'] = MAIL_SENDER_USERNAME
+app.config['FLASKY_ADMIN'] = ADMIN_MAIL
 mail = Mail(app)
 
 
+def send_email2(to: str, subject: str, template: str, **kwargs):
+    msg = Message(subject=app.config['FLASKY_MAIL_SUBJECT_PREFIX'] + subject,
+                  sender=app.config['FLASKY_MAIL_SENDER'],
+                  recipients=[to])
+    msg.body = render_template(template + ".txt", **kwargs)
+    msg.html = render_template(template + ".html", **kwargs)
+    mail.send(msg)
+
+
 def send_email_impl(recipient: str = 'yupenglei@126.com', subject: str = 'test mail'):
-    msg = Message(subject, sender=MAIL_USERNAME, recipients=[recipient])
+    msg = Message(subject, sender=MAIL_SENDER_USERNAME, recipients=[recipient])
     # msg.body = 'this is the plain text body'
     msg.html = 'This is the <b>HTML</b> body'
     mail.send(msg)
@@ -78,13 +89,14 @@ def index():
     form = NameForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.name.data).first()
-        print(user)
         new_name = form.name.data
         if user is None:
             user = User(username=new_name)
             db.session.add(user)
             db.session.commit()
             session['known'] = False
+            if app.config.get('FLASKY_ADMIN'):
+                send_email2(app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
         else:
             session['known'] = True
 
