@@ -2,13 +2,13 @@ import os
 from datetime import datetime
 from threading import Thread
 
-from flask import Flask, make_response, redirect, abort, render_template, session, url_for
+from flask import Flask, make_response, redirect, abort, render_template, session, url_for, flash
 from flask_bootstrap import Bootstrap
 from flask_mail import Mail, Message
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -109,6 +109,26 @@ def index():
                            form=form, name=name, known=known)
 
 
+class FeedbackForm(FlaskForm):
+    title = StringField('标题', validators=[DataRequired()])
+    content = TextAreaField('内容', validators=[DataRequired()])
+    submit = SubmitField('发送')
+
+
+@app.route('/feedback_to_admin', methods=['GET', 'POST'])
+def mail_to_admin():
+    form = FeedbackForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        content = form.content.data
+        if app.config.get('FLASKY_ADMIN'):
+            send_email(app.config['FLASKY_ADMIN'], 'Feedback:' + title, 'mail/feedback_to_admin', content=content)
+            flash("反馈已发送")
+        return redirect(url_for('mail_to_admin'))
+
+    return render_template('feedback_to_admin.html', current_time=datetime.utcnow(), form=form)
+
+
 @app.route("/list")
 def hello_list():
     _list = ['Hello', 'World', 'Tom', 'Cat']
@@ -148,7 +168,6 @@ def show_post(post_id):
 @app.route('/path/<path:subpath>')
 def show_subpath(subpath):
     return f'Subpath {subpath}'
-
 # @app.errorhandler(404)
 # def page_not_found(e):
 #     return render_template('404.html'), 404
