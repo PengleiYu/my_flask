@@ -11,26 +11,7 @@ from ..email import send_email
 
 @main.route("/", methods=['GET', 'POST'])
 def index():
-    form = NameForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        new_name = form.name.data
-        if user is None:
-            user = User(username=new_name)
-            db.session.add(user)
-            db.session.commit()
-            session['known'] = False
-            if current_app.config.get('FLASKY_ADMIN'):
-                send_email(current_app.config['FLASKY_ADMIN'], 'New User', 'mail/new_user', user=user)
-        else:
-            session['known'] = True
-
-        session['name'] = new_name
-        return redirect(url_for('main.index'))
-    name = session.get('name')
-    known = session.get('known', False)
-    return render_template("index.html", current_time=datetime.utcnow(),
-                           form=form, name=name, known=known)
+    return render_template("index.html", current_time=datetime.utcnow())
 
 
 @main.route('/feedback_to_admin', methods=['GET', 'POST'])
