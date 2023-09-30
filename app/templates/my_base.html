@@ -25,6 +25,13 @@
                     <li><a href="/">首页</a></li>
                     <li><a href="/feedback_to_admin">反馈</a></li>
                 </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('auth.logout') }}">Log Out</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('auth.login') }}">Log In</a></li>
+                    {% endif %}
+                </ul>
             </div>
         </div>
     </div>

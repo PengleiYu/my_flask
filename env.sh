@@ -9,3 +9,8 @@ export MAIL_USERNAME=809390770@qq.com
 export MAIL_PASSWORD=tzfpcxolpvopbfej
 # 管理员邮箱
 export FLASKY_ADMIN='tiepilong@qq.com'
+
+# 指定app路径
+export FLASK_APP=flask2.py
+# 启用重载器
+export FLASK_DEBUG=1
