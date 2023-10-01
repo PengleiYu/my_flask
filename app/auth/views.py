@@ -5,7 +5,23 @@ from flask_login import login_required, login_user, logout_user
 
 from app.models import User
 from . import auth
-from .forms import LoginForm
+from .forms import LoginForm, RegistrationForm
+from app import db
+
+
+@auth.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        user = User()
+        user.email = form.email.data
+        user.username = form.username.data
+        user.password = form.password.data
+        db.session.add(user)
+        db.session.commit()
+        flash('你现在可以登录了')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/register.html', form=form, current_time=datetime.utcnow())
 
 
 @auth.route('/login', methods=['GET', 'POST'])
