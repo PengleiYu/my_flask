@@ -1,9 +1,10 @@
 from datetime import datetime
 
 from flask import render_template, request, url_for, redirect, flash
-from flask_login import login_required, login_user, logout_user
+from flask_login import login_required, login_user, logout_user, current_user
 
 from app.models import User
+from app.email import send_email
 from . import auth
 from .forms import LoginForm, RegistrationForm
 from app import db
@@ -19,9 +20,27 @@ def register():
         user.password = form.password.data
         db.session.add(user)
         db.session.commit()
-        flash('你现在可以登录了')
+        token = user.generate_confirmation_token()
+        send_email(user.email, '确认邮件地址', 'auth/email/confirm', user=user, token=token)
+        flash('确认邮件已经发送到你的邮箱')
         return redirect(url_for('auth.login'))
     return render_template('auth/register.html', form=form, current_time=datetime.utcnow())
+
+
+@auth.route('/confirm/<token>')
+@login_required
+def confirm(token: str):
+    # 前置要求登录，所以一定不是匿名用户
+    user: User = current_user
+    if user.confirmed:
+        return redirect(url_for('main.index'))
+    if user.confirm(token):
+        user.confirmed = True
+        db.session.commit()
+        flash('你已验证邮箱')
+    else:
+        flash('验证链接是非法的或已失效')
+    return redirect(url_for('main.index'))
 
 
 @auth.route('/login', methods=['GET', 'POST'])
