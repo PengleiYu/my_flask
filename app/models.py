@@ -1,6 +1,9 @@
+from flask import current_app
+
 from . import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
+from itsdangerous import URLSafeTimedSerializer as Serializer, BadSignature, SignatureExpired
 
 
 class Role(db.Model):
@@ -21,6 +24,26 @@ class User(UserMixin, db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
     # 设置密码时存储hash值，校验密码时也校验hash
     password_hash = db.Column(db.String(128))
+    # 用户邮箱是否已验证
+    confirmed = db.Column(db.Boolean, default=False)
+
+    def generate_confirmation_token(self):
+        # current_app.secret_key 这个是不是更好
+        s = Serializer(current_app.config['SECRET_KEY'])
+        return s.dumps({'confirm': self.id})
+
+    def confirm(self, token: str, max_age_seconds: int = 3600) -> bool:
+        try:
+            s = Serializer(current_app.config['SECRET_KEY'])
+            data = s.loads(token, max_age=max_age_seconds)
+        except (BadSignature, SignatureExpired):
+            return False
+
+        if data.get('confirm') != self.id:
+            return False
+        self.confirmed = True
+        db.session.add(self)  # 方法内做这种操作似乎不好
+        return True
 
     @property
     def password(self):
