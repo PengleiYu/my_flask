@@ -7,7 +7,7 @@ from app import db
 from app.email import send_email
 from app.models import User
 from . import auth
-from .forms import LoginForm, RegistrationForm
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm
 
 
 # 全局拦截
@@ -95,6 +95,22 @@ def resend_confirm():
     send_email(user.email, '确认邮件地址', 'auth/email/confirm', user=user, token=token)
     flash('新的确认邮件已经发送到你的邮箱')
     return redirect(url_for('main.index'))
+
+
+@auth.route('/change_password', methods=['GET', 'POST'])
+def change_pwd():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        user: User = current_user
+        if user.verify_password(form.old_pwd.data):
+            user.password = form.pwd.data
+            db.session.add(user)
+            db.session.commit()
+            flash('您的密码已修改')
+            return redirect(url_for('main.index'))
+        else:
+            flash('密码不正确')
+    return render_template('auth/change_pwd.html', form=form, current_time=datetime.utcnow())
 
 
 @auth.route('/secret')

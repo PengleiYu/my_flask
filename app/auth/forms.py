@@ -33,3 +33,10 @@ class RegistrationForm(FlaskForm):
         print(f'field={username_field}')
         if User.query.filter_by(username=username_field.data).first():
             raise ValidationError('用户名已被使用')
+
+
+class ChangePasswordForm(FlaskForm):
+    old_pwd = StringField('旧密码', validators=[DataRequired()])
+    pwd = StringField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
+    pwd2 = StringField('确认新密码', validators=[DataRequired()])
+    submit = SubmitField('更新密码')
