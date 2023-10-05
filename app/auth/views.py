@@ -7,7 +7,7 @@ from app import db
 from app.email import send_email
 from app.models import User
 from . import auth
-from .forms import LoginForm, RegistrationForm, ChangePasswordForm
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm, PasswordResetRequestForm, PasswordResetFrom
 
 
 # 全局拦截
@@ -111,6 +111,46 @@ def change_pwd():
         else:
             flash('密码不正确')
     return render_template('auth/change_pwd.html', form=form, current_time=datetime.utcnow())
+
+
+@auth.route('/reset', methods=['GET', 'POST'])
+def password_reset_request():
+    # 非匿名用户跳转首页
+    cur_user: User = current_user
+    if not cur_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    # 表单合法则发送邮件，并跳转登录页
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user: User = User.query.filter_by(email=form.email.data).first()
+        if user:
+            token = user.generate_reset_token()
+            send_email(user.email, '重置密码', 'auth/email/reset_password', user=User, token=token)
+            flash('重置密码的邮件已发送到您的邮箱')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('未找到该邮箱')
+    # 默认渲染重置密码页面
+    return render_template('auth/reset_password.html', form=form, current_time=datetime.utcnow())
+
+
+@auth.route('/reset/<token>', methods=['GET', 'POST'])
+def password_reset(token: str):
+    # 非匿名用户，跳转首页
+    cur_user: User = current_user
+    if not cur_user.is_anonymous:
+        return redirect(url_for('main.index'))
+    # 校验通过则更新密码，并跳转登录页
+    form = PasswordResetFrom()
+    if form.validate_on_submit():
+        if User.reset_pwd(form.pwd1.data, token):
+            db.session.commit()
+            flash('您的密码已更新')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('重置链接是非法的或已时效')
+    # 默认渲染重置密码页
+    return render_template('auth/reset_password.html', form=form, current_time=datetime.utcnow())
 
 
 @auth.route('/secret')

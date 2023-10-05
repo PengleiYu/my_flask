@@ -1,3 +1,5 @@
+from typing import Dict
+
 from flask import current_app
 
 from . import db, login_manager
@@ -26,6 +28,24 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     # 用户邮箱是否已验证
     confirmed = db.Column(db.Boolean, default=False)
+
+    def generate_reset_token(self) -> str:
+        s = Serializer(current_app.secret_key)
+        return s.dumps({'reset': self.id})
+
+    @staticmethod
+    def reset_pwd(new_pwd: str, token: str, expiration: int = 3600) -> bool:
+        try:
+            s = Serializer(current_app.secret_key)
+            data: dict[str, str] = s.loads(token, max_age=expiration)
+        except (BadSignature, SignatureExpired):
+            return False
+        user: User = User.query.get(data.get('reset'))
+        if user is None:
+            return False
+        user.password = new_pwd
+        db.session.add(user)
+        return True
 
     def generate_confirmation_token(self):
         # current_app.secret_key 这个是不是更好

@@ -40,3 +40,14 @@ class ChangePasswordForm(FlaskForm):
     pwd = StringField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
     pwd2 = StringField('确认新密码', validators=[DataRequired()])
     submit = SubmitField('更新密码')
+
+
+class PasswordResetRequestForm(FlaskForm):
+    email = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    submit = SubmitField('重置密码')
+
+
+class PasswordResetFrom(FlaskForm):
+    pwd1 = PasswordField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
+    pwd2 = PasswordField('确认新密码', validators=[DataRequired()])
+    submit = SubmitField('重置密码')

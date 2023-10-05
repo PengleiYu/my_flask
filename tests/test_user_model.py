@@ -40,3 +40,21 @@ class UserModelTestCase(unittest.TestCase):
         time.sleep(2)
         self.assertFalse(u.confirm(token, max_age_seconds=1))
         self.assertTrue(u.confirm(token, max_age_seconds=3))
+
+    def test_valid_reset_token(self):
+        u = User()
+        u.password = 'cat'
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_token()
+        self.assertTrue(u.reset_pwd('dog', token))
+        self.assertTrue(u.verify_password('dog'))
+
+    def test_invalid_reset_token(self):
+        u = User()
+        u.password = 'cat'
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_reset_token()
+        self.assertFalse(u.reset_pwd('dog', token + 'a'))
+        self.assertTrue(u.verify_password('cat'))
