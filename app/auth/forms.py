@@ -25,26 +25,29 @@ class RegistrationForm(FlaskForm):
     # 必须保持这个方法签名，框架会自动调用
     # validate是标记，后半部分为要验证的字段
     def validate_email(self, email_field: StringField):
-        print(f'field={email_field}')
         if User.query.filter_by(email=email_field.data).first():
             raise ValidationError('邮箱已被注册')
 
     def validate_username(self, username_field: StringField):
-        print(f'field={username_field}')
         if User.query.filter_by(username=username_field.data).first():
             raise ValidationError('用户名已被使用')
 
 
 class ChangePasswordForm(FlaskForm):
-    old_pwd = StringField('旧密码', validators=[DataRequired()])
-    pwd = StringField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
-    pwd2 = StringField('确认新密码', validators=[DataRequired()])
+    old_pwd = PasswordField('旧密码', validators=[DataRequired()])  # 这里不自定义校验函数，是因为需要当前user，不适合在这里获取当前user
+    pwd = PasswordField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
+    pwd2 = PasswordField('确认新密码', validators=[DataRequired()])
     submit = SubmitField('更新密码')
 
 
 class PasswordResetRequestForm(FlaskForm):
     email = StringField('邮箱', validators=[DataRequired(), Length(1, 64), Email()])
     submit = SubmitField('重置密码')
+
+    def validate_email(self, email_field: StringField):
+        user: User = User.query_().filter_by(email=email_field.data).first()
+        if user is None:
+            raise ValidationError('未找到该邮箱')
 
 
 class PasswordResetFrom(FlaskForm):
