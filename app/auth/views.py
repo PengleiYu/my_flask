@@ -7,7 +7,8 @@ from app import db
 from app.email import send_email
 from app.models import User
 from . import auth
-from .forms import LoginForm, RegistrationForm, ChangePasswordForm, PasswordResetRequestForm, PasswordResetFrom
+from .forms import LoginForm, RegistrationForm, ChangePasswordForm, PasswordResetRequestForm, PasswordResetFrom, \
+    EmailChangeForm
 
 
 # 全局拦截
@@ -151,6 +152,37 @@ def password_reset(token: str):
             flash('重置链接是非法的或已时效')
     # 默认渲染重置密码页
     return render_template('auth/reset_password.html', form=form, current_time=datetime.utcnow())
+
+
+@auth.route('/change_email', methods=['GET', 'POST'])
+@login_required
+def change_email_request():
+    # 如果字段合法且密码匹配，则发送验证邮件
+    form = EmailChangeForm()
+    cur_user: User = current_user
+    if form.validate_on_submit():
+        if cur_user.verify_password(form.pwd.data):
+            token = cur_user.generate_email_change_token(form.new_email.data)
+            send_email(form.new_email.data, '验证您的新邮箱', 'auth/email/change_email', user=cur_user, token=token)
+            flash('已发送验证邮件到您的新邮箱')
+            return redirect(url_for('auth.login'))
+        else:
+            flash('密码不正确')
+    # 默认渲染修改邮箱页面
+    return render_template('auth/change_email.html', form=form, current_time=datetime.utcnow())
+
+
+# todo 这里必须添加个2，否则url_for生成的链接会跳转到上个函数
+@auth.route('/change_email2/<token>', methods=['GET', 'POST'])
+@login_required
+def change_email(token: str):
+    cur_user: User = current_user
+    if cur_user.change_email(token):
+        db.session.commit()
+        flash('邮箱修改成功')
+    else:
+        flash('非法请求')
+    return redirect(url_for('main.index'))
 
 
 @auth.route('/secret')

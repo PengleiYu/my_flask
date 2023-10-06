@@ -1,6 +1,7 @@
 from typing import Dict
 
 from flask import current_app
+from flask_sqlalchemy.query import Query
 
 from . import db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -28,6 +29,32 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     # 用户邮箱是否已验证
     confirmed = db.Column(db.Boolean, default=False)
+
+    @staticmethod
+    def query_() -> Query:
+        return User.query
+
+    def generate_email_change_token(self, new_email: str):
+        s = Serializer(current_app.secret_key)
+        return s.dumps({'change_email': self.id, 'new_email': new_email})
+
+    def change_email(self, token) -> bool:
+        try:
+            s = Serializer(current_app.secret_key)
+            data: dict[str, str] = s.loads(token, max_age=3600)
+        except (BadSignature, SignatureExpired):
+            return False
+        if self.id != data.get('change_email'):
+            return False
+        new_email = data.get('new_email')
+        if new_email is None:
+            return False
+        exist_user: User = self.query_().filter_by(email=new_email).first()
+        if exist_user is not None:
+            return False
+        self.email = new_email
+        db.session.add(self)
+        return True
 
     def generate_reset_token(self) -> str:
         s = Serializer(current_app.secret_key)

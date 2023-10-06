@@ -1,0 +1,6 @@
+<p>亲爱的 {{ user.username }}</p>
+<p>点击<a href="{{ url_for('auth.change_email', token=token, _external=True) }}">这里</a>来验证您的新邮箱</p>
+<p>如果无法点击，请将下方链接复制到浏览器</p>
+<p>{{ url_for('auth.change_email', token=token, _external=True) }}</p>
+<p>网站团队敬上</p>
+<p><small>注：此邮件为自动生成，请勿回复</small></p>

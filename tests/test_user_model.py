@@ -1,10 +1,11 @@
 import time
-import unittest
-from app.models import User
+
 from app import db
+from app.models import User
+from test_basics import BasicsTestCase
 
 
-class UserModelTestCase(unittest.TestCase):
+class UserModelTestCase(BasicsTestCase):
     def test_password_setter(self):
         u = User(password='cat')
         self.assertIsNotNone(u.password_hash)
@@ -58,3 +59,43 @@ class UserModelTestCase(unittest.TestCase):
         token = u.generate_reset_token()
         self.assertFalse(u.reset_pwd('dog', token + 'a'))
         self.assertTrue(u.verify_password('cat'))
+
+    def test_valid_email_change_token(self):
+        """
+        合法token正确修改email
+        """
+        u = User()
+        u.email = 'a@qq.com'
+        db.session.add(u)
+        db.session.commit()
+        token = u.generate_email_change_token('b@qq.com')
+        self.assertTrue(u.change_email(token))
+        self.assertEqual('b@qq.com', u.email)
+
+    def test_invalid_email_change_token(self):
+        """
+        user1生成的token不能用于其他用户修改邮箱
+        """
+        u = User()
+        u.email = 'a@qq.com'
+        u2 = User()
+        u2.email = 'b@qq.com'
+        db.session.add_all([u, u2])
+        db.session.commit()
+        token = u.generate_email_change_token('c@qq.com')
+        self.assertFalse(u2.change_email(token))
+        self.assertEqual('b@qq.com', u2.email)
+
+    def test_duplicate_email_change_token(self):
+        """
+        user1修改的邮箱不能与其他用户相同
+        """
+        u = User()
+        u.email = 'a@qq.com'
+        u2 = User()
+        u2.email = 'b@qq.com'
+        db.session.add_all([u, u2])
+        db.session.commit()
+        token = u.generate_email_change_token('b@qq.com')
+        self.assertFalse(u.change_email(token))
+        self.assertTrue('a@qq.com', u.email)

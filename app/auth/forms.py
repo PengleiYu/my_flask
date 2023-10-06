@@ -54,3 +54,15 @@ class PasswordResetFrom(FlaskForm):
     pwd1 = PasswordField('新密码', validators=[DataRequired(), EqualTo('pwd2', message='两次密码必须匹配')])
     pwd2 = PasswordField('确认新密码', validators=[DataRequired()])
     submit = SubmitField('重置密码')
+
+
+class EmailChangeForm(FlaskForm):
+    new_email = StringField('新邮箱', validators=[DataRequired(), Length(1, 64), Email()])
+    pwd = PasswordField('密码', validators=[DataRequired()])
+    submit = SubmitField('更换邮箱')
+
+    def validate_new_email(self, new_email_field: StringField):
+        print('validate_new_email')
+        user: User = User.query_().filter_by(email=new_email_field.data).first()
+        if user is not None:
+            raise ValidationError('该邮箱已注册')
